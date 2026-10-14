@@ -1,0 +1,34 @@
+name: playbook-studio
+
+services:
+  playbook-studio:
+    build:
+      context: ..
+      dockerfile: devops/Dockerfile
+    image: playbook-studio-app:latest
+    container_name: playbook-studio
+    environment:
+      # The working clone lives on the named volume so unpushed commits survive
+      # restarts. Set STUDIO_CONTENT_REPO_URL (with an embedded token for a
+      # private repo) to run the managed-clone composition; without it the
+      # studio runs the operator-owned composition and expects a checkout at
+      # STUDIO_PLAYBOOK_ROOT.
+      STUDIO_PLAYBOOK_ROOT: /data/playbook
+      # STUDIO_CONTENT_REPO_URL: "https://x-access-token:<token>@github.com/<org>/playbook.git"
+      # HTTP Basic credentials. The studio fails closed without these. Change
+      # the password before exposing this instance beyond localhost, or set
+      # STUDIO_AUTH_DISABLED to "true" to run it unauthenticated locally.
+      STUDIO_AUTH_USER: "ops"
+      STUDIO_AUTH_PASSWORD: "change-me"
+      # The origin install lines name. Unset, a line names the scheme and Host
+      # its request arrived with, which serves localhost; behind a TLS proxy, set
+      # the https origin clients reach this instance on.
+      # STUDIO_PUBLIC_ORIGIN: "https://studio.example.com"
+    ports:
+      - "8000:8000"
+    volumes:
+      - playbook-studio-data:/data
+    restart: unless-stopped
+
+volumes:
+  playbook-studio-data:

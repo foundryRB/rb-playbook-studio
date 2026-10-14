@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  labels:
+    {{- include "playbook-studio.labels" . | nindent 4 }}
+data:
+  # The origin install lines name: the route's hostname, which the gateway serves
+  # over TLS. The app reads it in place of the scheme its proxies report.
+  STUDIO_PUBLIC_ORIGIN: {{ printf "https://%s" .Values.host | quote }}
+  {{- range $k, $v := .Values.config }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}

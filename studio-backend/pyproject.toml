@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "studio-backend"
+version = "0.1.0"
+description = "Local visual browser and editor for the AI playbook: REF graph, section detail, gated edits."
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+    "mcp>=1.28,<2",
+    # The event bus client, with the nkeys extra the platform's signed credential
+    # needs. Imported lazily inside the publisher's worker, so a studio with no bus
+    # grant never touches it.
+    "nats-py[nkeys]>=2.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff==0.16.8",
+    "httpx>=0.27",
+    "csd-intent~=0.4.0",
+]
+# The toolchain the playbook's validation gates run with: SubprocessPlaybookValidator
+# shells out to `python -m pytest` in the playbook checkout using this interpreter,
+# and the playbook's suite needs the @intent decorator importable.
+gates = [
+    "pytest>=7.0",
+    "csd-pytest-intent~=0.3.0",
+]
+
+[project.scripts]
+studio-backend-api = "studio.adapters.inbound.http.run:main"
+
+[tool.setuptools.packages.find]
+include = ["studio*"]
+
+[tool.setuptools.package-data]
+# The install scripts the machine door serves.
+"studio.adapters.inbound.http.installer" = ["install.sh", "install.ps1"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

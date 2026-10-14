@@ -1,0 +1,12 @@
+- vulnerability: GHSA-vfj7-8cjw-p6xm
+  justification: vulnerable_code_cannot_be_controlled_by_adversary
+  impact_statement: >-
+    braces is used by the frontend Tailwind build/watch chain and the docs
+    markdownlint-cli2 toolchain. Tailwind content patterns are fixed in
+    studio-frontend/tailwind.config.js, and docs/package.json supplies the fixed
+    lint glob src/content/docs/**/*.{md,mdx}. Application requests and authored
+    Markdown cannot choose these brace patterns. The deployed Python application
+    serves the compiled frontend assets, and the docs image serves static HTML;
+    neither runtime executes the Node.js glob tooling. No patched braces release
+    is available. Reassess if untrusted input can set glob patterns, the dependency
+    enters a runtime input path, or a usable patched release becomes available.

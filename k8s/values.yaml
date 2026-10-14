@@ -1,0 +1,119 @@
+# Two released images (REF-Foundry section 4, the multi-image binding): the app and
+# its docs site, each promoted by its own Image Updater alias writing images.<component>.tag.
+images:
+  app:
+    repository: ghcr.io/vfpt-vodafone-foundry/playbook-studio-app
+    tag: latest
+    pullPolicy: Always
+  docs:
+    repository: ghcr.io/vfpt-vodafone-foundry/playbook-studio-docs
+    tag: latest
+    pullPolicy: Always
+
+# Pause switch: apps ship running. The platform scales the app to zero by
+# overriding this to true on the app's ArgoCD Application (docs stay up).
+paused: false
+
+# Materialized in-namespace by foundry-platform. Set to [] when the GHCR package
+# is public.
+imagePullSecrets:
+  - name: ghcr-pull
+
+host: playbook-studio.vodafone-foundry.com
+
+# Per-team Gateway created by foundry-platform (platform/teams/playbook-studio.yaml).
+gateway:
+  name: playbook-studio
+  namespace: network
+
+# The working clone of the content repo lives here; unpushed commits survive
+# pod restarts (ADR-002).
+persistence:
+  size: 1Gi
+  # storageClassName: local-path  # k3s default; uncomment to pin
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    memory: 1Gi
+
+# Auth gate. Two modes; OIDC is the default (ADR-031).
+#
+# oidc.enabled true (default): oauth2-proxy fronts the human surfaces (SPA, /api),
+#   authenticating them against this app's Keycloak realm (a "Sign in with Google"
+#   button on the realm login). The app keeps its own HTTP Basic gate but scopes it
+#   to the /mcp machine door (STUDIO_AUTH_SCOPE=mcp), which an agent authenticates
+#   non-interactively; oauth2-proxy skips /mcp so those requests reach that gate.
+#   Empty Basic credentials in a running app make protected /mcp routes answer 503.
+# oidc.enabled false: HTTP Basic (scope=all) gates SPA, /api, and /mcp; protected
+#   routes answer 503 when the running app has empty Basic credentials.
+# Both Secret references are required. An absent Secret object or referenced OIDC
+# key can prevent container startup; proxy configuration errors fail closed.
+
+auth:
+  existingSecret: playbook-studio-auth
+  oidc:
+    enabled: true
+    issuer: https://keycloak.vodafone-foundry.com/realms/playbook-studio
+    clientId: playbook-studio
+    emailDomains: "*"
+    # Client secret + cookie secret; minted in-cluster in this namespace by the
+    # platform grant's generate-if-absent Job (gen-keycloak-playbook-studio, ADR-034) and
+    # reflected into the identity namespace for realm provisioning. Nothing to apply.
+    existingSecret: keycloak-playbook-studio
+    image:
+      repository: quay.io/oauth2-proxy/oauth2-proxy
+      tag: v7.7.1
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 64Mi
+
+# The content repo the studio manages. The Secret carries
+# STUDIO_CONTENT_REPO_URL: an https clone URL with an embedded fine-grained PAT
+# (contents read/write on the content repo only). Its presence switches the
+# composition to the managed clone (ADR-003); without it the pod has no
+# datastore and stays empty.
+content:
+  existingSecret: playbook-studio-content
+
+# The shared event bus (foundry-platform ADR-041, REF-Events). Off by default: a
+# studio whose install holds no bus grant states its facts to the log instead, and
+# every act completes exactly as it would with a broker up, which is the one-way rule
+# rather than a fallback. The two Secrets are what the grant produced
+# (foundry-onboard-events): `nats-playbook-studio` (key `seed`) is the keypair this
+# studio's own generator minted in its namespace and never reflected anywhere;
+# `nats-jwt-playbook-studio` (key `user.jwt`) is the user JWT the platform signed for
+# its public half and reflected back. The deployment assembles the two into the one
+# credentials file a NATS client reads. `servers` is the bus's in-cluster address; it
+# has no public one. To adopt the grant, flip `enabled` and change nothing else.
+events:
+  enabled: false
+  servers: nats://nats.messaging.svc.cluster.local:4222
+  seedSecret: nats-playbook-studio
+  jwtSecret: nats-jwt-playbook-studio
+
+# Non-secret app configuration. Rendered into a ConfigMap; loaded via envFrom.
+config:
+  STUDIO_PLAYBOOK_ROOT: /data/playbook
+  STUDIO_GIT_AUTHOR_NAME: playbook-studio
+  STUDIO_GIT_AUTHOR_EMAIL: playbook-studio@vodafone-foundry.com
+  STUDIO_CONTENT_POLL_SECONDS: "300"
+  # The MCP transport's DNS-rebinding guard admits localhost only by default;
+  # a deployment must allow the Host header of its public hostname.
+  STUDIO_MCP_ALLOWED_HOSTS: playbook-studio.vodafone-foundry.com
+
+# Per-app docs site served behind the central portal at docs.<domain>/apps/<app>.
+# Built from docs/ by CI with the base baked in; this just runs the image.
+docs:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 64Mi

@@ -1,0 +1,2593 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "playbook-studio API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health",
+        "description": "Report service liveness, the served release, and wired capabilities.\n\nReachable unauthenticated on every door: the kubelet probes it bare, and the\nOIDC sidecar skips it so an external observer can read which release serves\nwithout a credential.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent-credential": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Agent Credential",
+        "description": "The shared MCP HTTP Basic credential (base64 of user:password), handed back\nonly to a caller that already acts as the service.\n\nThe shared credential is the service's: a person connects an agent with\ntheir own personal token (POST /api/tokens). So the route answers only on\nthe stand-alone deployment, where the human door's Basic gate means the\ncaller already holds this very pair; behind the OIDC proxy a person gets a\n403. Answers 503 when the pair is unset (there is nothing to hand out).",
+        "operationId": "agent_credential_api_agent_credential_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Agent Credential Api Agent Credential Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Me",
+        "description": "Who you are, your role, the galaxies you write and the atoms you own.\n\nThe UI renders every edit, create, sync and validate control from this and\nfrom each document's `can_edit`; it never reads OWNERS itself.",
+        "operationId": "me_api_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tokens": {
+      "post": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Mint Token",
+        "description": "Mint a personal token for the signed-in person, shown this once.\n\nEvery signed-in person may mint their own, a reader included: the token\ncarries their identity to the machine door, and their rights stay whatever\nOWNERS gives them there.",
+        "operationId": "mint_token_api_tokens_post",
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalTokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/owners": {
+      "get": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Get Owners",
+        "description": "Return the OWNERS text, or null when the playbook has none.",
+        "operationId": "get_owners_api_owners_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnersResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "owners"
+        ],
+        "summary": "Update Owners",
+        "description": "Replace OWNERS (admins). Refused when it does not parse or names a missing path.",
+        "operationId": "update_owners_api_owners_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graph": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "Get Graph",
+        "description": "Return the full playbook reference graph.",
+        "operationId": "get_graph_api_graph_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playbook": {
+      "get": {
+        "tags": [
+          "playbook"
+        ],
+        "summary": "Get Playbook",
+        "description": "Return AI-PLAYBOOK.md parsed into titled sections.",
+        "operationId": "get_playbook_api_playbook_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybookResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "playbook"
+        ],
+        "summary": "Update Playbook",
+        "description": "Replace AI-PLAYBOOK.md; the edit survives only if the gates pass.",
+        "operationId": "update_playbook_api_playbook_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/galaxies/{name}": {
+      "get": {
+        "tags": [
+          "galaxies"
+        ],
+        "summary": "Get Galaxy",
+        "description": "Return one galaxy's GALAXY.md parsed into titled sections.",
+        "operationId": "get_galaxy_api_galaxies__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalaxyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "galaxies"
+        ],
+        "summary": "Update Galaxy",
+        "description": "Replace one galaxy's GALAXY.md; the edit survives only if the gates pass.",
+        "operationId": "update_galaxy_api_galaxies__name__put",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doors": {
+      "post": {
+        "tags": [
+          "doors"
+        ],
+        "summary": "Create Door",
+        "description": "File a new MCP or RAG card in a galaxy; gated like every edit.",
+        "operationId": "create_door_api_doors_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDoorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doors/{name}": {
+      "get": {
+        "tags": [
+          "doors"
+        ],
+        "summary": "Get Door",
+        "description": "Return one declared door's document (purpose and doctrine).",
+        "operationId": "get_door_api_doors__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "doors"
+        ],
+        "summary": "Update Door Document",
+        "description": "Replace the whole card; the edit survives only if the gates pass.",
+        "operationId": "update_door_document_api_doors__name__put",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nebulae": {
+      "get": {
+        "tags": [
+          "nebulae"
+        ],
+        "summary": "List Nebulae",
+        "description": "Return every nebula's roster summary (territory, subject, status counts).",
+        "operationId": "list_nebulae_api_nebulae_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NebulaSummaryResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Nebulae Api Nebulae Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nebulae/{territory}": {
+      "get": {
+        "tags": [
+          "nebulae"
+        ],
+        "summary": "Get Nebula",
+        "description": "Return one nebula: NEBULA.md raw plus every note's frontmatter and body.",
+        "operationId": "get_nebula_api_nebulae__territory__get",
+        "parameters": [
+          {
+            "name": "territory",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Territory"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NebulaDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/refs": {
+      "post": {
+        "tags": [
+          "refs"
+        ],
+        "summary": "Create Ref",
+        "description": "Author a new REF from the canonical template; gated like every edit.",
+        "operationId": "create_ref_api_refs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRefRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/refs/{name}": {
+      "get": {
+        "tags": [
+          "refs"
+        ],
+        "summary": "Get Ref",
+        "description": "Return one parsed REF by name (e.g. REF-Python).",
+        "operationId": "get_ref_api_refs__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "refs"
+        ],
+        "summary": "Update Ref Document",
+        "description": "Replace the whole document; the edit survives only if the gates pass.",
+        "operationId": "update_ref_document_api_refs__name__put",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/refs/{name}/sections/{number}": {
+      "put": {
+        "tags": [
+          "refs"
+        ],
+        "summary": "Update Ref Section",
+        "description": "Write a section body; the edit survives only if the validation gates pass.",
+        "operationId": "update_ref_section_api_refs__name__sections__number__put",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills": {
+      "post": {
+        "tags": [
+          "skills"
+        ],
+        "summary": "Create Skill",
+        "description": "Run the bootstrap-skill transaction; gated like every edit.",
+        "operationId": "create_skill_api_skills_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSkillRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills/{name}": {
+      "get": {
+        "tags": [
+          "skills"
+        ],
+        "summary": "Get Skill",
+        "description": "Return one parsed skill, its file list, and its runtime state.",
+        "operationId": "get_skill_api_skills__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "skills"
+        ],
+        "summary": "Update Skill Document",
+        "description": "Replace the whole SKILL.md; the edit survives only if the gates pass.",
+        "operationId": "update_skill_document_api_skills__name__put",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills/{name}/files/{rel_path}": {
+      "get": {
+        "tags": [
+          "skills"
+        ],
+        "summary": "Get Skill File",
+        "description": "Return one file from the skill folder as text for the reader: UTF-8 with\nundecodable bytes replaced and line endings read as newlines.",
+        "operationId": "get_skill_file_api_skills__name__files__rel_path__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          },
+          {
+            "name": "rel_path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rel Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillFileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "skills"
+        ],
+        "summary": "Update Skill File",
+        "description": "Write one skill file; the edit survives only if the gates pass.",
+        "operationId": "update_skill_file_api_skills__name__files__rel_path__put",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          },
+          {
+            "name": "rel_path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rel Path"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills/{name}/install": {
+      "post": {
+        "tags": [
+          "skills"
+        ],
+        "summary": "Install Skill",
+        "description": "Copy the master skill folder into the Claude runtime's skills directory.\n\nLocal-composition only: a managed-clone deployment has no skills runtime\nof its own; agents install skills on their machines via the MCP tools.",
+        "operationId": "install_skill_api_skills__name__install_post",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "List Agents",
+        "description": "Return the whole agent roster, parsed.",
+        "operationId": "list_agents_api_agents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Agents Api Agents Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Create Agent",
+        "description": "Run the bootstrap-agent transaction; gated like every edit.",
+        "operationId": "create_agent_api_agents_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Get Agent",
+        "description": "Return one parsed agent: identity, licence, doors, posture, appearance.",
+        "operationId": "get_agent_api_agents__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Update Agent Document",
+        "description": "Replace the whole agent document; the edit survives only if the gates pass.",
+        "operationId": "update_agent_document_api_agents__name__put",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claims": {
+      "get": {
+        "tags": [
+          "claims"
+        ],
+        "summary": "List Claims",
+        "description": "Return every claim in the playbook's intent.yaml.",
+        "operationId": "list_claims_api_claims_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IntentClaimResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Claims Api Claims Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/validate": {
+      "post": {
+        "tags": [
+          "validation"
+        ],
+        "summary": "Run Validation",
+        "description": "Run the playbook's intent tests + link checker and return the report.",
+        "operationId": "run_validation_api_validate_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationReportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync/status": {
+      "get": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "Sync Status",
+        "description": "Report unpushed commits and the diffstat a push would publish.",
+        "operationId": "sync_status_api_sync_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync/push": {
+      "post": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "Push Changes",
+        "description": "Publish accumulated local commits upstream (rebase-retry on rejection).",
+        "operationId": "push_changes_api_sync_push_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync/refresh": {
+      "post": {
+        "tags": [
+          "sync"
+        ],
+        "summary": "Refresh Content",
+        "description": "Pull upstream head into the working clone.",
+        "operationId": "refresh_content_api_sync_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentAppearanceResponse": {
+        "properties": {
+          "hair": {
+            "type": "string",
+            "title": "Hair"
+          },
+          "headwear": {
+            "type": "string",
+            "title": "Headwear"
+          },
+          "eyes": {
+            "type": "string",
+            "title": "Eyes"
+          },
+          "face": {
+            "type": "string",
+            "title": "Face"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hair",
+          "headwear",
+          "eyes",
+          "face"
+        ],
+        "title": "AgentAppearanceResponse",
+        "description": "The agent's face on the human surfaces; absent for fresh-eyes agents."
+      },
+      "AgentPostureResponse": {
+        "properties": {
+          "permission": {
+            "type": "string",
+            "title": "Permission"
+          },
+          "writes": {
+            "type": "boolean",
+            "title": "Writes"
+          },
+          "fresh_eyes": {
+            "type": "boolean",
+            "title": "Fresh Eyes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "permission",
+          "writes",
+          "fresh_eyes"
+        ],
+        "title": "AgentPostureResponse",
+        "description": "How the agent behaves at its runtime."
+      },
+      "AgentResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "galaxy": {
+            "type": "string",
+            "title": "Galaxy"
+          },
+          "refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Refs"
+          },
+          "skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skills"
+          },
+          "doors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Doors"
+          },
+          "posture": {
+            "$ref": "#/components/schemas/AgentPostureResponse"
+          },
+          "appearance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentAppearanceResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "raw": {
+            "type": "string",
+            "title": "Raw"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "title",
+          "description",
+          "galaxy",
+          "refs",
+          "skills",
+          "doors",
+          "posture",
+          "summary",
+          "raw",
+          "can_edit",
+          "body"
+        ],
+        "title": "AgentResponse",
+        "description": "A parsed agents/<name>.md returned over HTTP."
+      },
+      "CreateAgentRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Refs"
+          },
+          "skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skills"
+          },
+          "doors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Doors",
+            "default": []
+          },
+          "galaxy": {
+            "type": "string",
+            "title": "Galaxy",
+            "default": "craft"
+          },
+          "permission": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permission"
+          },
+          "writes": {
+            "type": "boolean",
+            "title": "Writes",
+            "default": false
+          },
+          "fresh_eyes": {
+            "type": "boolean",
+            "title": "Fresh Eyes",
+            "default": false
+          },
+          "hair": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hair"
+          },
+          "headwear": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headwear"
+          },
+          "eyes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eyes"
+          },
+          "face": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Face"
+          },
+          "owners": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Owners",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "title",
+          "description",
+          "refs",
+          "skills"
+        ],
+        "title": "CreateAgentRequest",
+        "description": "Inputs for the bootstrap-agent transaction.\n\nOptional fields ride to the scaffolder only when given: bootstrap-agent\nowns the defaults (the permission mode per posture, the appearance vocabulary),\nso the studio never carries a second copy of them."
+      },
+      "CreateDoorRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "'mcp' (a door) or 'rag' (a retrieval seat)"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "galaxy": {
+            "type": "string",
+            "title": "Galaxy"
+          },
+          "raw": {
+            "type": "string",
+            "title": "Raw"
+          },
+          "owners": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Owners",
+            "description": "Emails OWNERS will name as the card's owners"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "name",
+          "galaxy",
+          "raw"
+        ],
+        "title": "CreateDoorRequest",
+        "description": "The card's kind, name, galaxy and whole document, and who will own it."
+      },
+      "CreateRefRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "galaxy": {
+            "type": "string",
+            "title": "Galaxy",
+            "default": "craft"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "domain",
+          "title",
+          "summary"
+        ],
+        "title": "CreateRefRequest",
+        "description": "Inputs for a template-conformant new REF."
+      },
+      "CreateSkillRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Refs"
+          },
+          "galaxy": {
+            "type": "string",
+            "title": "Galaxy",
+            "default": "craft"
+          },
+          "owners": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Owners",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "refs"
+        ],
+        "title": "CreateSkillRequest",
+        "description": "Inputs for the bootstrap-skill transaction."
+      },
+      "DoorResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "galaxy": {
+            "type": "string",
+            "title": "Galaxy"
+          },
+          "refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Refs"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "raw": {
+            "type": "string",
+            "title": "Raw"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "galaxy",
+          "refs",
+          "summary",
+          "raw",
+          "can_edit"
+        ],
+        "title": "DoorResponse",
+        "description": "A declared door (mcps/<name>.md or rags/<name>.md) returned over HTTP."
+      },
+      "GalaxyResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/PlaybookSectionResponse"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "raw": {
+            "type": "string",
+            "title": "Raw"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "title",
+          "sections",
+          "raw",
+          "can_edit"
+        ],
+        "title": "GalaxyResponse",
+        "description": "A parsed GALAXY.md returned over HTTP."
+      },
+      "GraphNodeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "galaxy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Galaxy"
+          },
+          "moons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Moons",
+            "default": []
+          },
+          "fresh_eyes": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fresh Eyes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "domain",
+          "summary"
+        ],
+        "title": "GraphNodeResponse",
+        "description": "A playbook graph node returned over HTTP."
+      },
+      "GraphResponse": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNodeResponse"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/ReferenceEdgeResponse"
+            },
+            "type": "array",
+            "title": "Edges"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "title": "GraphResponse",
+        "description": "The full playbook node/edge graph returned over HTTP."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "sync": {
+            "type": "boolean",
+            "title": "Sync"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "version",
+          "sync"
+        ],
+        "title": "HealthResponse",
+        "description": "Service liveness, version, and wired capabilities."
+      },
+      "IntentClaimResponse": {
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "title": "Claim Id"
+          },
+          "statement": {
+            "type": "string",
+            "title": "Statement"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "criticality": {
+            "type": "string",
+            "title": "Criticality"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "claim_id",
+          "statement",
+          "rationale",
+          "criticality",
+          "status"
+        ],
+        "title": "IntentClaimResponse",
+        "description": "An intent.yaml claim returned over HTTP."
+      },
+      "NebulaDetailResponse": {
+        "properties": {
+          "territory": {
+            "type": "string",
+            "title": "Territory"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "raw": {
+            "type": "string",
+            "title": "Raw"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/NebulaNoteResponse"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "territory",
+          "subject",
+          "raw",
+          "notes"
+        ],
+        "title": "NebulaDetailResponse",
+        "description": "A nebula returned over HTTP: the fronting NEBULA.md plus every note.\n\nServed on the human surface only; the MCP door never carries nebula\ncontent (the quarantine, REF-Forge)."
+      },
+      "NebulaNoteResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "confidence": {
+            "type": "string",
+            "title": "Confidence"
+          },
+          "vote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vote"
+          },
+          "seats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Seats"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "links": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Links"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "confidence",
+          "vote",
+          "seats",
+          "sources",
+          "links",
+          "status",
+          "body"
+        ],
+        "title": "NebulaNoteResponse",
+        "description": "A typed research note (REF-Forge stardust schema) returned over HTTP."
+      },
+      "NebulaSummaryResponse": {
+        "properties": {
+          "territory": {
+            "type": "string",
+            "title": "Territory"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "note_count": {
+            "type": "integer",
+            "title": "Note Count"
+          },
+          "unsmelted": {
+            "type": "integer",
+            "title": "Unsmelted"
+          },
+          "taken": {
+            "type": "integer",
+            "title": "Taken"
+          },
+          "burned": {
+            "type": "integer",
+            "title": "Burned"
+          }
+        },
+        "type": "object",
+        "required": [
+          "territory",
+          "subject",
+          "note_count",
+          "unsmelted",
+          "taken",
+          "burned"
+        ],
+        "title": "NebulaSummaryResponse",
+        "description": "One territory under study: subject line and stardust status counts."
+      },
+      "OwnersResponse": {
+        "properties": {
+          "raw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw"
+          }
+        },
+        "type": "object",
+        "required": [
+          "raw"
+        ],
+        "title": "OwnersResponse",
+        "description": "The OWNERS text, or null when the playbook has none (everyone reads)."
+      },
+      "PersonalTokenResponse": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "expires_at": {
+            "type": "string",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "email",
+          "name",
+          "expires_at"
+        ],
+        "title": "PersonalTokenResponse",
+        "description": "The token (shown once), whose it is, and when it ends (UTC, ISO 8601)."
+      },
+      "PlaybookResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/PlaybookSectionResponse"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "raw": {
+            "type": "string",
+            "title": "Raw"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "sections",
+          "raw",
+          "can_edit"
+        ],
+        "title": "PlaybookResponse",
+        "description": "The parsed AI-PLAYBOOK.md returned over HTTP."
+      },
+      "PlaybookSectionResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "PlaybookSectionResponse",
+        "description": "A titled AI-PLAYBOOK.md section returned over HTTP."
+      },
+      "RefDetailResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/RefSectionResponse"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "raw": {
+            "type": "string",
+            "title": "Raw"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit"
+          },
+          "galaxy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Galaxy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "domain",
+          "title",
+          "summary",
+          "sections",
+          "raw",
+          "can_edit"
+        ],
+        "title": "RefDetailResponse",
+        "description": "A parsed REF returned over HTTP."
+      },
+      "RefSectionResponse": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "generated": {
+            "type": "boolean",
+            "title": "Generated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "title",
+          "body",
+          "generated"
+        ],
+        "title": "RefSectionResponse",
+        "description": "A numbered REF section returned over HTTP."
+      },
+      "ReferenceEdgeResponse": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "target",
+          "kind"
+        ],
+        "title": "ReferenceEdgeResponse",
+        "description": "A directed reference edge returned over HTTP."
+      },
+      "SkillFileResponse": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "content"
+        ],
+        "title": "SkillFileResponse",
+        "description": "A text file from a skill folder returned over HTTP."
+      },
+      "SkillResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Refs"
+          },
+          "raw": {
+            "type": "string",
+            "title": "Raw"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Files"
+          },
+          "installed": {
+            "type": "boolean",
+            "title": "Installed"
+          },
+          "in_sync": {
+            "type": "boolean",
+            "title": "In Sync"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit"
+          },
+          "galaxy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Galaxy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "refs",
+          "raw",
+          "body",
+          "files",
+          "installed",
+          "in_sync",
+          "can_edit"
+        ],
+        "title": "SkillResponse",
+        "description": "A parsed SKILL.md returned over HTTP."
+      },
+      "SkillStatusResponse": {
+        "properties": {
+          "installed": {
+            "type": "boolean",
+            "title": "Installed"
+          },
+          "in_sync": {
+            "type": "boolean",
+            "title": "In Sync"
+          }
+        },
+        "type": "object",
+        "required": [
+          "installed",
+          "in_sync"
+        ],
+        "title": "SkillStatusResponse",
+        "description": "Installed / in-sync state of a skill in the runtime directory."
+      },
+      "StandingResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "service": {
+            "type": "boolean",
+            "title": "Service"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "galaxies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Galaxies"
+          },
+          "atoms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Atoms"
+          },
+          "can_edit_playbook": {
+            "type": "boolean",
+            "title": "Can Edit Playbook"
+          },
+          "can_administer": {
+            "type": "boolean",
+            "title": "Can Administer"
+          },
+          "can_validate": {
+            "type": "boolean",
+            "title": "Can Validate"
+          },
+          "tokens": {
+            "type": "boolean",
+            "title": "Tokens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "service",
+          "role",
+          "galaxies",
+          "atoms",
+          "can_edit_playbook",
+          "can_administer",
+          "can_validate",
+          "tokens"
+        ],
+        "title": "StandingResponse",
+        "description": "The acting identity, its role, and the rights the UI renders its controls from."
+      },
+      "SyncStatusResponse": {
+        "properties": {
+          "unpushed_commits": {
+            "type": "integer",
+            "title": "Unpushed Commits"
+          },
+          "diff_stat": {
+            "type": "string",
+            "title": "Diff Stat"
+          },
+          "repo": {
+            "type": "string",
+            "title": "Repo",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "unpushed_commits",
+          "diff_stat"
+        ],
+        "title": "SyncStatusResponse",
+        "description": "Unpushed commits, the diffstat a push would publish, and the upstream."
+      },
+      "UpdateDocumentRequest": {
+        "properties": {
+          "raw": {
+            "type": "string",
+            "title": "Raw"
+          }
+        },
+        "type": "object",
+        "required": [
+          "raw"
+        ],
+        "title": "UpdateDocumentRequest",
+        "description": "The new full markdown content (frontmatter included) for one REF."
+      },
+      "UpdateSectionRequest": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "title": "UpdateSectionRequest",
+        "description": "The new markdown body for one REF section."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "ValidationReportResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "tests_passed": {
+            "type": "boolean",
+            "title": "Tests Passed"
+          },
+          "links_ok": {
+            "type": "boolean",
+            "title": "Links Ok"
+          },
+          "tests_output": {
+            "type": "string",
+            "title": "Tests Output"
+          },
+          "links_output": {
+            "type": "string",
+            "title": "Links Output"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "tests_passed",
+          "links_ok",
+          "tests_output",
+          "links_output"
+        ],
+        "title": "ValidationReportResponse",
+        "description": "Outcome of the playbook's validation gates returned over HTTP."
+      }
+    }
+  }
+}

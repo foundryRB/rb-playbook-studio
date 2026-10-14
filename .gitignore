@@ -1,0 +1,23 @@
+# Out-of-band secrets: only the .env.example templates are committed.
+k8s/secrets/*.env
+
+# Local runtime configuration.
+.env
+
+# SPA build output staged for the runtime image.
+studio-backend/web/
+
+# Python bytecode the test run writes.
+__pycache__/
+*.py[cod]
+
+# Node deps, at the root too: studio-frontend/ and docs/ ignore their own, but
+# a bare `vitest` at the root writes node_modules/.vite - and that cache was
+# committed once already, which is how it got here.
+node_modules/
+
+# Incremental build state `tsc -b` writes beside the tsconfig.
+tsconfig.tsbuildinfo
+
+# The delivery scratch's worktree mount point (committed on the line's delivery/* ref, never here).
+.delivery/

@@ -1,0 +1,527 @@
+# Intent claims for playbook-studio (CSD-INTENT-01 canonical schema).
+#
+# Cross-runtime: pytest tests in studio-backend/tests carry @intent markers,
+# vitest tests in studio-frontend/src carry intent() wrappers. Audit both in
+# one pass with the standalone csd-intent CLI:
+#
+#   pip install -e ../csd-intent
+#   csd-intent .
+#
+# Claim ID convention:
+#   INT-GATE-NNN   - trusted-output editing: gates run, failures roll back
+#   INT-DERIVE-NNN - the studio is derivative of the playbook's own tooling
+#   INT-GRAPH-NNN  - the reference graph faithfully mirrors the corpus
+#   INT-LAYOUT-NNN - visual layout invariants (frontend)
+
+INT-GATE-001:
+  version: 1.1.0
+  status: active
+  statement: "Every mutating operation (REF section or document, SKILL.md, a galaxy's GALAXY.md, AI-PLAYBOOK.md, and creation) MUST run the playbook's validation gates and restore the prior state byte-identical when they fail."
+  rationale: "CSD Trust Calibration applied to the playbook itself: an edit becomes trusted output only by passing the corpus's own deterministic gates. Without rollback, a rejected edit would still corrupt the corpus."
+  test:
+    scope: integration
+    component: GatedWrites
+    type: invariant
+  criticality: critical
+
+INT-GATE-002:
+  version: 2.0.0
+  status: active
+  statement: "The machine-generated back-link sections ('Skills that instantiate this REF' and 'Agents that orbit this REF') MUST be rejected (HTTP 409) by the section-edit endpoint."
+  rationale: "Those sections are owned by scripts/sync_backlinks.py (playbook Top Violation #1: no hand-maintained copies of mechanically derived content). The UI renders them read-only; the API must enforce it."
+  test:
+    scope: integration
+    component: RefSections
+    type: contract
+  criticality: high
+
+INT-GATE-003:
+  version: 1.0.0
+  status: active
+  statement: "The skill-file write MUST create a file the skill does not carry yet, along with any folder it sits in, and a creation the gates reject MUST leave the skill folder as it was, with neither the file nor any folder the write brought into being."
+  rationale: "A skill ships whatever files it carries beside SKILL.md (templates, scripts, reference pages), so a door that only edits existing files cannot author one. Creation is a mutation like any other, so INT-GATE-001's rollback applies to it, and the prior state it restores is the file's absence."
+  test:
+    scope: integration
+    component: GatedWrites
+    type: invariant
+  criticality: high
+
+INT-GATE-004:
+  version: 1.0.0
+  status: active
+  statement: "The runtime stage of devops/Dockerfile MUST carry every executable the playbook's validation suite calls: git, the gates extra (pytest + pytest-intent) on the serving interpreter, and a node binary on PATH taken from the Node build stage. The runtime stage MUST run node after taking it, so an image without node fails to build, and the docs page that lists the app image's runtime dependencies MUST name each of them."
+  rationale: "The studio's gate is the playbook's own suite (INT-GATE-001), and that suite shells out to git, imports pytest-intent, and runs the deck layout gate under node. A tool the image lacks does not skip its gate, it fails it, so every gated edit is rolled back whatever it changed and the studio accepts nothing. That is what happened when the playbook's deck layout gate began calling node and the image carried none (#44). The build-time node run makes dropping it fail the image build, and this claim holds the Dockerfile and the docs list to the same set so neither loses a dependency silently."
+  test:
+    scope: integration
+    component: RuntimeImage
+    type: invariant
+  criticality: high
+
+INT-DERIVE-001:
+  version: 1.1.0
+  status: active
+  statement: "REF, Skill, and Agent creation MUST delegate to the playbook's own bootstrap-ref, bootstrap-skill, and bootstrap-agent scaffolders; the studio MUST NOT own a parallel copy of any authoring template."
+  rationale: "The playbook is the single source of authoring truth (REF-Authoring). A studio-owned template would drift from the skills' templates, recreating the exact violation the playbook forbids."
+  test:
+    scope: integration
+    component: Scaffolding
+    type: invariant
+  criticality: critical
+
+INT-DERIVE-002:
+  version: 2.0.0
+  status: active
+  statement: "Every write to a skill document, a skill file, or an agent document MUST regenerate the back-link sections from the playbook's own scripts/sync_backlinks.py before the gates read the corpus, and MUST NOT compose those sections itself. A write the gates or the script refuse MUST restore byte-identical every REF the regeneration rewrote, and a script that refuses the corpus MUST surface as a refusal carrying its output, never as an error."
+  rationale: "The generated sections quote the frontmatter they mirror, so an edit to a description or a refs list stales them by construction. Refusing the edit for a staleness the edit itself caused leaves the caller no path through the door, and the fix belongs to the script that owns the sections (INT-GATE-002, playbook Top Violation #1), never to a copy in the studio. SKILL.md reaches the door by two routes and both write frontmatter, so both regenerate. The script rejects the same malformed documents the gates reject, so its verdict is a verdict about the write: surfacing it as an error would leave the mutation on disk with no rollback and no refusal, breaking INT-GATE-001 on the path meant to uphold it."
+  test:
+    scope: integration
+    component: Scaffolding
+    type: invariant
+  criticality: high
+
+INT-GRAPH-001:
+  version: 3.0.0
+  status: active
+  statement: "The graph endpoint MUST expose the playbook root, every REF with its domain and summary, every skill, every agent as its own node kind, every declared door (mcp and rag planets), each node's galaxy, and all seven edge kinds (playbook-to-ref, ref-to-ref, skill-to-ref, door-to-ref, agent-to-ref, agent-to-skill, agent-to-door)."
+  rationale: "Navigation, the maps (2D and 3D), and the connection panels are all derived from this graph; a lossy graph silently hides corpus content from every view."
+  test:
+    scope: integration
+    component: Graph
+    type: contract
+  criticality: high
+
+INT-LAYOUT-001:
+  version: 1.0.0
+  status: active
+  statement: "The radial layout MUST place the playbook at the origin, place every node exactly once, put skills on a wider ring than REFs, and color REFs by their domain."
+  rationale: "The map is only trustworthy if the geometry encodes what it claims: ring membership = artifact kind, color = domain, one dot per artifact."
+  test:
+    scope: unit
+    component: RadialLayout
+    type: invariant
+  criticality: medium
+
+INT-LAYOUT-002:
+  version: 1.0.0
+  status: active
+  statement: "The radial layout MUST place declared doors (mcp and rag nodes) on the outer ring alongside skills, colored by their kind, so a galaxy's planets are visible in one orbit scan."
+  rationale: "Doors are planets of the same rank as skills (REF-Universe par. 3); a map that hides them misrepresents the solar systems it draws."
+  test:
+    scope: unit
+    component: RadialLayout
+    type: invariant
+  criticality: medium
+
+INT-LAYOUT-003:
+  version: 1.0.0
+  status: active
+  statement: "The radial layout MUST place agents on the outer ring beside the planets they bind, colored and drawn as their own kind, distinct from skills and doors."
+  rationale: "An agent is who does the work, not what gets done (REF-Universe par. 4); an agent restyled as a skill hides that distinction from the one glance the map exists to serve."
+  test:
+    scope: unit
+    component: RadialLayout
+    type: invariant
+  criticality: medium
+
+INT-UNIVERSE-001:
+  version: 1.0.0
+  status: active
+  statement: "Scoping the graph to a galaxy MUST keep exactly that galaxy's nodes plus a synthesized routing core at the center, rewire hub edges onto the core, and drop every edge that crosses the galaxy boundary."
+  rationale: "The galaxy view is the trusted per-shelf map; a scope that leaks foreign nodes or dangling edges makes the drill-down lie about what the shelf holds."
+  test:
+    scope: unit
+    component: GalaxyScope
+    type: invariant
+  criticality: high
+
+INT-UNIVERSE-002:
+  version: 2.0.0
+  status: active
+  statement: "The universe summary MUST report, per galaxy, the counts of suns (REFs), carried planets (skills and agents, each its own count), and declared doors, derived solely from the graph's galaxy metadata."
+  rationale: "The universe map sizes and labels its bodies from these counts; a summary that miscounts misleads the first glance every session starts with."
+  test:
+    scope: unit
+    component: UniverseSummary
+    type: invariant
+  criticality: medium
+
+INT-UNIVERSE-003:
+  version: 1.0.0
+  status: active
+  statement: "The 3D scene model MUST place every graph node exactly once in meters around the viewer, cluster each galaxy's suns around that galaxy's own center, keep every planet nearer to its sun than to any galaxy center, and link the hub to each galaxy and each planet to its anchor."
+  rationale: "The immersive view is trustworthy only if proximity encodes ownership: a planet drifting near a foreign galaxy or a sun far from its shelf reads as structure that does not exist."
+  test:
+    scope: unit
+    component: UniverseScene
+    type: invariant
+  criticality: medium
+
+INT-NEBULA-001:
+  version: 1.0.0
+  status: active
+  statement: "The HTTP-only nebula endpoints (/api/nebulae and /api/nebulae/{territory}) MUST serve the nebula list (territory, subject line, note count, and per-status counts) and per-territory detail (NEBULA.md raw plus every note's frontmatter fields and markdown body) parsed from nebulae/<territory>/ in the playbook checkout."
+  rationale: "The studio's views render nebulae dim beside the earned galaxies (REF-Universe: visible, second-class, honest). The human surface needs the stardust readable; a lossy parse would hide research the operator paid for."
+  test:
+    scope: integration
+    component: Nebulae
+    type: contract
+  criticality: high
+
+INT-QUAR-001:
+  version: 1.0.0
+  status: active
+  statement: "Nebula content MUST stay quarantined from the agent-facing surfaces: the MCP server MUST register no nebula-related tool, and the reference graph (get_graph over HTTP and MCP) MUST carry zero nebula-derived nodes or edges, even when nebulae/ folders are present in the corpus."
+  rationale: "Nebulae hold unearned stardust (REF-Forge: the quarantine). The playbook door serves galaxies only; a nebula leaking into the graph or the MCP tool surface would let unsmelted research inform agents as if it were doctrine."
+  test:
+    scope: integration
+    component: Quarantine
+    type: invariant
+  criticality: critical
+
+INT-UNIVERSE-004:
+  version: 1.0.0
+  status: active
+  statement: "The 3D scene model MUST derive every nebula body solely from the fetched nebula data (zero code per individual territory), place each nebula outside the whole galaxy scatter, keep the placement deterministic, and keep nebulae out of the earned bodies list."
+  rationale: "Unearned reads as dim and distant. A nebula sitting inside the galaxy field, or drawn from a hand-coded territory list, would misrepresent the corpus the moment the next expedition lands."
+  test:
+    scope: unit
+    component: UniverseScene
+    type: invariant
+  criticality: medium
+
+INT-UNIVERSE-005:
+  version: 1.0.0
+  status: active
+  statement: "The seeded draw a world's cartography stands on MUST be a pure function of its seed and archetype: every forge of a seed MUST read the same permutation tables and draw the same parameters, and a resolution tier MUST scale that draw rather than redraw it."
+  rationale: "The worlds are forged fresh on every load and the shader is a pure function of what this draw produces, so this draw is where determinism is decided: an RNG consumed in a different order, or re-run per tier, would hand a seed a different world between one load and the next. The rendered height field is normalized against the extrema of the texels actually sampled, so it is NOT tier-invariant, and this claim deliberately does not say it is."
+  test:
+    scope: unit
+    component: PlanetCartography
+    type: invariant
+  criticality: high
+
+INT-SYNC-001:
+  version: 1.0.0
+  status: active
+  statement: "Every mutating operation that passes the validation gates MUST become a local git commit; an operation the gates reject MUST NOT create one."
+  rationale: "Commit-per-gated-edit means no accepted edit lives only in dirty working-tree state: the PVC persists commits across restarts and the audit trail is git itself (ADR-002). A commit for a rejected edit would publish content the gates refused."
+  test:
+    scope: integration
+    component: GitSync
+    type: invariant
+  criticality: critical
+
+INT-SYNC-002:
+  version: 1.0.0
+  status: active
+  statement: "A push rejected because upstream moved MUST reconcile with pull --rebase and retry; a real conflict MUST surface raw as HTTP 409 naming the conflicting files, with the rebase aborted and local commits intact."
+  rationale: "Upstream drift is routine for a shared repo and resolves mechanically; conflicting histories are not. Automatic resolution would silently rewrite corpus content, so the studio stops and hands the human the file list (ADR-002)."
+  test:
+    scope: integration
+    component: GitSync
+    type: contract
+  criticality: high
+
+INT-SYNC-003:
+  version: 1.0.0
+  status: active
+  statement: "The sync status MUST name the working clone's upstream as an owner/name slug read from the clone itself, never a URL; a composition managing no clone MUST report it empty rather than substitute a default."
+  rationale: "The studio owns the clone, so its upstream IS the playbook repo's identity - the one place a consumer can resolve it without carrying a literal that a rename or an org move would silently strand (a delivery reconcile filing playbook lessons guessed the wrong repo from an app's name, and the whole maintenance loop failed on the misfile). The deployed remote carries a PAT in its userinfo, so reducing to a slug drops the credential by construction rather than by a filter someone must remember."
+  test:
+    scope: integration
+    component: GitSync
+    type: contract
+  criticality: high
+
+INT-MCP-001:
+  version: 1.0.0
+  status: active
+  statement: "Every MCP write tool MUST take the same gated path as REST: a rejected edit surfaces the validation report as the tool error, restores the prior state byte-identical, and creates no commit; an accepted edit becomes a commit."
+  rationale: "MCP is a third door into the one shared core (ADR-004); if any adapter could bypass the gate-validate-rollback-commit path, trust calibration would depend on which door the writer used."
+  test:
+    scope: integration
+    component: McpAdapter
+    type: invariant
+  criticality: critical
+
+INT-MCP-002:
+  version: 1.0.0
+  status: active
+  statement: "The MCP tool list MUST derive from the capability wiring: sync tools (push, refresh, status) exist only in a composition that manages the clone."
+  rationale: "The composition root is the single place capabilities are decided (ADR-003); a tool advertising an operation its composition cannot perform is a lie to every connected agent."
+  test:
+    scope: integration
+    component: McpAdapter
+    type: contract
+  criticality: high
+
+INT-AUTH-001:
+  version: 1.0.0
+  status: active
+  statement: "With auth configured, a request without valid credentials MUST be rejected with 401 on every surface, including the /mcp mount."
+  rationale: "The studio republishes a private repo; one fail-closed gate covers all three doors (ADR-005) so no surface is accidentally open."
+  test:
+    scope: integration
+    component: Auth
+    type: contract
+  criticality: critical
+
+INT-AUTH-002:
+  version: 1.0.0
+  status: active
+  statement: "With auth configured, a request carrying valid credentials MUST be allowed."
+  rationale: "The gate exists to admit the credentialed operator and their agents, not to block the instance."
+  test:
+    scope: integration
+    component: Auth
+    type: contract
+  criticality: high
+
+INT-AUTH-003:
+  version: 1.0.0
+  status: active
+  statement: "The health endpoint (/api/health) MUST be reachable without credentials."
+  rationale: "Liveness and readiness probes carry no credentials; gating them would make the deployment unschedulable."
+  test:
+    scope: integration
+    component: Auth
+    type: contract
+  criticality: high
+
+INT-AUTH-004:
+  version: 1.0.0
+  status: active
+  statement: "With no credentials configured and auth not explicitly disabled, protected routes MUST fail closed with 503."
+  rationale: "A misconfigured instance is closed, never silently open; this is what makes publishing the hostname safe before the credential lands (ADR-005)."
+  test:
+    scope: integration
+    component: Auth
+    type: invariant
+  criticality: critical
+
+INT-AUTH-005:
+  version: 1.1.0
+  status: active
+  statement: "In mcp auth scope (STUDIO_AUTH_SCOPE=mcp) the gate MUST still cover the /mcp machine door fail-closed (valid Basic or a valid personal token admitted, 503 when unconfigured, 401 otherwise) and MUST serve the human surfaces (SPA, /api) open for an OIDC reverse proxy in front to gate, reads as they come and writes only for the identity that proxy forwards (INT-AUTH-008); it MUST NOT leave /mcp open in this scope."
+  rationale: "An MCP client is a non-interactive agent that cannot complete a browser OIDC login, so the machine door keeps its machine credential (HTTP Basic) while humans authenticate through oauth2-proxy on the other surfaces. The app owns only the /mcp half of the split and the chart couples the two, so 'every surface rejects the unauthenticated' holds across the pair without forcing agents through an interactive flow (ADR-031)."
+  test:
+    scope: integration
+    component: Auth
+    type: invariant
+  criticality: critical
+
+INT-NAV-001:
+  version: 1.0.0
+  status: active
+  statement: "A corpus-relative markdown link rendered in a reader MUST open its target inside the studio; a path the studio cannot open MUST render inert rather than as a live anchor."
+  rationale: "The corpus links by repo path (AI-PLAYBOOK.md routes to a shelf as [galaxies/craft/GALAXY.md](galaxies/craft/GALAXY.md)) because that is what resolves on disk, and the playbook's link checker validates exactly that. Rendered untranslated in the SPA those paths are not routes the app serves, so clicking one navigated the browser clean out of the studio and the reader appeared broken: the only way to a galaxy doc was back out to the map and in through the center node. The link checker cannot catch this - it judges the corpus on disk, where the reference is sound; the defect is in rendering. An unopenable path renders inert because a link that silently leaves the SPA is worse than one that visibly does nothing."
+  test:
+    scope: unit
+    component: CorpusLink
+    type: behavior
+  criticality: medium
+
+INT-EVENTS-001:
+  version: 1.1.0
+  status: active
+  statement: "Stating a fact on the event bus MUST NOT change the mutation that caused it. With the event transport unreachable, every mutation (a REF, skill, agent, or MCP or RAG card created; a REF section or document, a SKILL.md or skill file, an agent document, a card, OWNERS, or the playbook index replaced; a push) MUST complete with the same outcome, the same response, and the same corpus on disk as it does with the transport up, whether the gates accepted it and committed or refused it and rolled back, and each dropped publish MUST be logged at warning. A publish MUST NOT be retried inside the caller's latency budget, queued into unbounded memory, or surfaced to the caller as an error, and no readiness probe, health check, or startup path may depend on the transport. Every published event MUST be a CloudEvent whose type is one row of the studio's own events page under the playbook domain, never composed at a call site, carrying the document's identity and the commit pointer and never a document's body; a refusal MUST name the gate that refused."
+  rationale: "REF-Events section 6 states the one-way rule as the test every producer attests. The act this studio cannot lose to a broker is the gate's verdict: Trust Calibration (INT-GATE-001) is what makes an edit trusted output, and an edit that was accepted or rolled back must read the same to its caller whether or not anything else heard about it. The guarantee is enforced at the one call site (state_fact) rather than assumed of the adapter: a publisher is contractually forbidden from raising, but a caller trusting that contract and being wrong would fail an act it had already committed. A refusal is the fact the ticket exists for (#10): a rolled-back edit is otherwise invisible outside the caller's own response, and publishing which gate refused makes corpus health observable without publishing the gate's output. The page equality is REF-Events section 3: each owner states its own types where its tests can hold them, so the consumer's contract and the adapter's vocabulary cannot drift apart."
+  test:
+    scope: integration
+    component: EventPublishing
+    type: invariant
+  criticality: high
+
+INT-MCP-003:
+  version: 1.0.0
+  status: active
+  statement: "The studio MUST serve agent renderings the playbook's own installer produced, never a rendering of its own: get_agent_files returns, for each harness, the file that installer would have written, and the set of harnesses and their install locations derive from the installer's published table rather than from anything the studio states. An installer that cannot be loaded, or that publishes no such table, MUST surface as a refusal naming the file."
+  rationale: "An agent is one definition every runtime spawns (REF-Universe section 4), and the corpus-to-runtime mapping is pinned in the playbook as INT-TOOL-002, whose rationale rules out a second rendering 'in a skill's prose or a studio' as the parallel-maintained copy universal violation 1 forbids. A client with no clone still needs a runtime-shaped agent, and before this door it got one by hand-applying a copied mapping table - the exact drift the claim forbids, about to double as a second harness arrived (playbook issue #152). Delegating rather than restating is what makes one home true across the MCP path as well as the clone path. Deriving the harness set from the installer too, not just the rendering, keeps the studio from being the place someone adds a harness the installer cannot actually write."
+  test:
+    scope: integration
+    component: McpAdapter
+    type: invariant
+  criticality: high
+# --- the MCP tool table is held to the adapter, the way the events page is held
+# --- to the publisher: a hand-maintained mirror of a live source must be tested ---
+
+INT-MCP-004:
+  version: 1.0.0
+  status: active
+  statement: "The MCP tool table in docs/src/content/docs/reference/tools.md MUST state exactly the tools the MCP adapter (studio-backend/studio/adapters/inbound/mcp/server.py) registers: every registered tool appears by name in the table's first column, and the table names no tool the adapter does not register. The registered set derives from the adapter source; the stated set derives from the page."
+  rationale: "The tool table is the consumer's contract and the registrations are what the door serves; maintained by hand on both sides they drift silently, and the 2026-08 docs reconciliation found exactly that across the fleet, with three parts documenting none of their tools. The events page already carries this discipline against the publisher's constants; this claim extends it to the tool roster, so a tool shipped without its row, or a row surviving its tool, fails the build instead of waiting for the next audit."
+  test:
+    scope: integration
+    component: Docs
+    type: invariant
+  criticality: medium
+
+INT-MCP-005:
+  version: 1.0.0
+  status: active
+  statement: "get_skill_files and get_skill_file MUST return every skill file so that writing what they return reproduces the folder's bytes: a file whose bytes decode as UTF-8 comes back as that text (get_skill_file returns the text itself), and any other file as its bytes base64-encoded with \"encoding\": \"base64\" beside its path. Their descriptions MUST tell the client to decode a base64 entry before writing it."
+  rationale: "A skill ships binary assets as well as text, a facilitation map's PowerPoint template among them. Read as text, such a file comes back with every invalid byte replaced while the call succeeds, so a client installs a corrupt template and learns nothing (#48). Text stays text, readable in the transcript and written as received; only bytes that text cannot carry travel encoded, and the marker beside the path tells the client which entries those are."
+  test:
+    scope: integration
+    component: McpAdapter
+    type: invariant
+  criticality: high
+
+# --- the toolchain install: one download, applied by the playbook's own installer ---
+
+INT-INSTALL-001:
+  version: 3.0.0
+  status: active
+  statement: "One shell call MUST sync the whole toolchain for a named harness: the line get_install_command returns downloads one bundle carrying every skill file and every agent the per-skill path (get_skill_files, get_agent_files) serves for that harness, byte-identical for every file once a base64 entry is decoded, each skill file with its executable bit as the folder has it, and the playbook's own scripts/install_playbook.py as the clone holds it; the line then runs that installer against the unpacked bundle, passing every flag the caller appended, on Python 3.8 or newer."
+  rationale: "A full sync over the per-skill path costs a tool call per skill and agent and carries every byte through the model twice, about 1M tokens for the corpus, and leaves a half-written skill when a long run is interrupted (#46). The bundle is the same files in one artifact; holding it to the per-skill path, file for file, is what lets an agent switch paths without a single installed byte moving. Both carry what a clone install writes, binary assets included: the per-skill path returns those base64-encoded."
+  test:
+    scope: integration
+    component: Install
+    type: invariant
+  criticality: high
+
+INT-INSTALL-002:
+  version: 2.0.0
+  status: active
+  statement: "The studio MUST hold no install logic of its own: its install scripts only find Python, download and unpack the bundle, and run the bundle's scripts/install_playbook.py with the caller's arguments, and no studio source names any other installer. The door MUST offer the toolchain install through get_install_command alone: it serves no install prompt, and its instructions name that tool and no skill."
+  rationale: "Every rule about what an install writes or removes (comparison, whole-folder swap, prune, the summary table) lives once, in the playbook's installer, which a clone install and a connector install both run; a second applier here would be the parallel copy playbook universal violation 1 forbids, with the facts the installer keeps inside its main() restated beside it and held equal only where a checkout is present. One way in means a fresh machine needs no skill installed to install the rest (#46)."
+  test:
+    scope: integration
+    component: Install
+    type: invariant
+  criticality: high
+
+INT-AUTH-006:
+  version: 1.0.0
+  status: active
+  statement: "get_install_command MUST return a line that carries a download token the door minted, never the connector's Basic credential. The gate MUST admit that token only on GET requests to the install routes under /mcp/install/, only until it expires (minutes after minting), and only in the process that minted it; it MUST NOT admit an MCP call, a REST route, or any other method, and the install routes MUST fail closed like every gated route when no credential is configured."
+  rationale: "The shell that runs the line is not the connector and holds no credential, and the line itself lands in a transcript. Handing out the long-lived Basic credential there would publish it; a short-lived, download-only token keeps a leaked line worth downloads of the toolchain for ten minutes. Serving the routes under /mcp puts them where machine credentials already pass (the OIDC proxy skips /mcp), so no gateway or chart change is needed (ADR-009)."
+  test:
+    scope: integration
+    component: Auth
+    type: invariant
+  criticality: critical
+
+INT-AUTH-007:
+  version: 1.0.0
+  status: active
+  statement: "Every URL an install hands a client, the lines get_install_command returns and the bundle URL inside the install script those lines fetch, MUST name the configured public origin ($STUDIO_PUBLIC_ORIGIN) when one is set, whatever scheme or host the request's forwarded headers carry, and the chart MUST set that origin to https:// and the route's hostname. With none set, as in a local run, they MUST name the scheme and Host the request arrived with."
+  rationale: "The line carries the download token, and the client executes the launcher and the bundle it fetches. Behind the gateway the proxies in front of the app report the plain-http hop they received, and the edge serves http without redirecting, so a line built from forwarded headers sends the token in cleartext and runs code anyone on the path can read or alter (#51). The public origin is a fact of the deployment the chart already holds as the route's hostname; a local run has no proxy and no TLS, and its request names its own origin."
+  test:
+    scope: integration
+    component: Auth
+    type: invariant
+  criticality: critical
+
+# --- people act as themselves: identity, rights and signature on both doors (#54) ---
+
+INT-AUTH-008:
+  version: 1.0.0
+  status: active
+  statement: "On the human door behind the OIDC proxy (STUDIO_AUTH_SCOPE=mcp) the person a request acts as MUST be read from the forwarded identity (one X-Forwarded-Email shaped like an email; X-Forwarded-Preferred-Username as the name, the email when absent) only when the TCP peer is loopback, the request carries the proxy secret (STUDIO_PROXY_SECRET) as the password of its Basic header, and the path is not on the machine door (/mcp); with no proxy secret configured, no forwarded identity is trusted. The chart MUST hand the proxy that secret (OAUTH2_PROXY_BASIC_AUTH_PASSWORD from the app's auth Secret) with --pass-basic-auth. From any other peer, on /mcp, or with a malformed value (two emails, a name carrying a control character, '<' or '>'), the same headers MUST act as nobody: /api/me answers 401, every document reads can_edit false, and a write answers 401 and leaves the corpus and its history untouched. The runtime image MUST start the server with --no-proxy-headers so the peer is the real one. Standing alone (scope 'all'), the Basic gate's holder MUST act as the service."
+  rationale: "The sidecar is the only party that verified the person. The app's port is reachable in-cluster without the proxy, the proxy passes client headers through untouched on the routes it skips, uvicorn would otherwise rewrite the peer from X-Forwarded-For, and any other process in the pod (the gates run the corpus's code) also reaches the app from loopback; a secret only the sidecar holds is what makes its headers its own (ADR-010). A write with nobody behind it has no author and no rights, so it is refused rather than attributed to the service."
+  test:
+    scope: integration
+    component: Auth
+    type: invariant
+  criticality: critical
+
+INT-AUTH-009:
+  version: 1.0.0
+  status: active
+  statement: "A personal token MUST be minted only for the signed-in person who asks (POST /api/tokens: 401 for nobody, 403 for the service, 503 with no key configured), MUST be signed with STUDIO_TOKEN_KEY from the app's Secret so a token minted by one process verifies in another holding the same key, and on /mcp MUST act as exactly the person it names. The gate MUST refuse (401) a token that is expired, signed by another key, altered (the named person swapped), or issued before the person's not-before line in OWNERS, the last taking effect on the next request with no restart. A token MUST open nothing but the machine door. The shared Basic credential MUST act as the service, and /api/agent-credential MUST hand it only to a caller already acting as the service."
+  rationale: "Handing a person the shared credential makes them an admin and signs their changes as the service; a token that names its person lets a reader connect an agent that reads and a writer one that writes within their rights. A signature over the claims needs no store, survives restarts by construction, and cannot be stretched or re-addressed; revocation by date keeps every rights decision in the one reviewed file (ADR-012)."
+  test:
+    scope: integration
+    component: Auth
+    type: invariant
+  criticality: critical
+
+INT-AUTH-010:
+  version: 1.0.0
+  status: active
+  statement: "Every write use case MUST ask one rights function, may(actor, action, path) over the playbook's OWNERS, with its target before it touches the corpus, so the human door and the machine door give the same answer to the same person: a reader writes nothing; an atom owner edits only the skill, agent or card it owns; a galaxy writer edits that galaxy's page, REFs and atoms and creates only in that galaxy; an admin does everything, the playbook page, OWNERS, push and refresh included; running the gates needs a role that writes. A refusal MUST answer 403 (or a tool error) naming the role that would allow the act and the role the actor holds, with nothing written and no commit. Every document read (REF, skill, agent, card, galaxy page, playbook page) MUST carry can_edit from the same rights, and /api/me (get_me on the machine door) MUST name the actor's role, the galaxies it may create in and the atoms it owns."
+  rationale: "A team shares one playbook only if who may change what is one answer; deciding it in the use cases rather than in each adapter is what makes the doors agree, and naming the needed role turns a refusal into the next step rather than a dead end (ADR-011). The UI renders from can_edit and /api/me so it never holds a second copy of the rules."
+  test:
+    scope: integration
+    component: Rights
+    type: invariant
+  criticality: critical
+
+INT-AUTH-011:
+  version: 1.0.0
+  status: active
+  statement: "OWNERS at the playbook root MUST be read in CODEOWNERS syntax with literal paths anchored at the root, owners named by email (compared case-blind), '#' comments, and 'not-before <email> <date or ISO timestamp>' lines; a person MUST own each path a line gives them and everything under it, rights being the union of the lines that name them. With no OWNERS, or one that does not parse, every person MUST be a reader. An edit through either door that does not parse, or names a path the playbook does not hold, MUST be refused (400, naming the line) before anything is written; a valid edit (admins only) MUST pass the gates, roll back byte-identical on refusal, become one commit, and take effect on the next request. Owners named when an atom is created MUST become its OWNERS line in the same transaction, removed again if the gates refuse the creation."
+  rationale: "CODEOWNERS is the syntax a reviewer already reads, and keeping rights in the corpus makes every change to them a reviewed, attributed commit. Literal paths keep each line decidable by eye; union semantics keep an atom owner's line from demoting the galaxy writer and admin above it; failing closed means an install whose OWNERS has not landed grants no write, rather than every write (ADR-011)."
+  test:
+    scope: integration
+    component: Rights
+    type: invariant
+  criticality: critical
+
+INT-AUTH-012:
+  version: 1.0.0
+  status: active
+  statement: "The SPA MUST render every write control from the studio's own answers, never from OWNERS: a document's edit controls only when it carries can_edit; the create entry points only when /api/me names a galaxy the person may create in, with the galaxy choice limited to those galaxies; push and refresh only for a person who may administer; the on-demand validation only for a role that writes. A reader, or nobody signed in, MUST see no write control. The header MUST show who is signed in and their role, and the Connect menu MUST offer every signed-in person their own token."
+  rationale: "A control the server would refuse is a broken promise; rendering from can_edit and /api/me keeps one source of rights and lets the UI show each person exactly what they can do (ADR-011)."
+  test:
+    scope: unit
+    component: RoleGating
+    type: behavior
+  criticality: high
+
+INT-SYNC-004:
+  version: 1.0.0
+  status: active
+  statement: "Every commit a gated write causes MUST name the acting person as its git author, on both doors, and the service as author when the service acts; the clone's configured identity (the service) MUST stay the committer, and the git port MUST take an author on every commit."
+  rationale: "Author and committer are git's own split between who wrote a change and who recorded it: the person wrote it, the studio recorded and pushed it, so history and blame say who changed what while the repository host keeps one pushing credential (ADR-013)."
+  test:
+    scope: integration
+    component: GitSync
+    type: invariant
+  criticality: high
+
+INT-SYNC-005:
+  version: 1.0.0
+  status: active
+  statement: "One process-wide re-entrant lock MUST span each write's whole transaction (the rights check again under the lock, the edit, regeneration, validation, rollback or commit), and push, refresh, the content poll, the on-demand validation and the install bundle's read MUST take the same lock: two concurrent writes MUST produce two commits, each holding only its author's change, with no two validations running over the tree at once, and a refresh or bundle requested during a write MUST wait for its commit."
+  rationale: "A commit names one person, so it must hold exactly that person's change; one working tree written from worker threads, MCP tools and the poll with nothing ordering them could commit one person's edit under another's name or validate a tree a pull is rewriting (ADR-014)."
+  test:
+    scope: integration
+    component: CorpusLock
+    type: invariant
+  criticality: critical
+
+INT-MCP-006:
+  version: 1.0.0
+  status: active
+  statement: "Write handlers on /api and write tools on /mcp MUST run their use case off the event loop, so /api/health answers within the probe's one-second timeout while a gated write's validation runs through either door."
+  rationale: "A gated write runs the playbook's whole validation; on the event loop it would hold every route, the health check included, and the kubelet's readiness and liveness probes could take the studio out of rotation or restart it mid-write (ADR-014)."
+  test:
+    scope: integration
+    component: McpAdapter
+    type: invariant
+  criticality: high
+
+INT-GATE-005:
+  version: 1.0.0
+  status: active
+  statement: "MCP and RAG cards (galaxies/<name>/mcps/<door>.md, galaxies/<name>/rags/<corpus>.md) MUST be readable, replaceable and creatable through both doors like agent documents: a write MUST pass the gates and become one commit, a refused write MUST restore the card (or its absence) byte-identical with no commit, a card MUST keep the name it is filed under, and a card whose kind, name or frontmatter name does not fit MUST be refused before anything is written."
+  rationale: "A card is a declaration in the corpus like an agent document (REF-Universe section 3), so an owner can only own one the studio can edit; the playbook carries no scaffolder for cards, so the caller sends the whole card and the gates judge it like every other edit (INT-GATE-001)."
+  test:
+    scope: integration
+    component: GatedWrites
+    type: invariant
+  criticality: high
+
+INT-GATE-006:
+  version: 1.0.0
+  status: active
+  statement: "The validation gates MUST judge a copy of the clone that leaves out its git directory, in subprocesses whose environment carries none of the studio's STUDIO_ settings, and the corpus scripts a write runs (the scaffolders, the back-link sync) MUST run without those settings too. With a gates user named (STUDIO_GATES_USER, set by the runtime image, which creates that unprivileged user), every gate command MUST run as that user, without supplementary groups, owning the copy and its scratch home; a gates user that cannot be resolved MUST fail the gates rather than run them as the studio; every process that user still runs MUST be ended after the gates; and the managed clone MUST be closed to every other user (mode 0700). Code the suite runs, a skill script written by its atom owner included, MUST NOT be able to change the clone a write commits (OWNERS above all), by a relative or an absolute path, or read the studio's credentials from its environment or the clone's git config."
+  rationale: "The playbook's suite runs code the corpus carries, and with rights in OWNERS the people who write that code are no longer all admins. Run over the live clone as the studio, an atom owner's script could rewrite OWNERS during validation and the write's own commit would carry the grant under their name; a copy alone deflects only the writes resolved relative to the suite, because the clone's path is a published constant, so the boundary has to be the operating system's: another user, who owns the copy and cannot enter the clone or read the studio's process environment (ADR-011)."
+  test:
+    scope: integration
+    component: GatedWrites
+    type: invariant
+  criticality: critical
+

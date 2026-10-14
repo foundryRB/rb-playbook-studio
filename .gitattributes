@@ -1,0 +1,5 @@
+# The repo stores text as LF. Without this, a Windows checkout gets CRLF working
+# copies while git's blobs stay LF, and `prettier --check` then reports every
+# line of every older file as drifted - noise that hides the handful of files
+# genuinely out of style (it once turned 2 real drifts into a 7-file report).
+* text=auto eol=lf
