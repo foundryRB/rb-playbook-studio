@@ -18,12 +18,12 @@ export default defineConfig({
     starlight({
       title: 'Playbook Studio',
       components: { SiteTitle: './src/components/SiteTitle.astro' },
-      logo: { light: './src/assets/vfpt-lockup-light.svg', dark: './src/assets/vfpt-lockup-dark.svg', alt: 'Digital Engineering, Vodafone Portugal' },
+      logo: { light: './src/assets/rb-lockup-light.svg', dark: './src/assets/rb-lockup-dark.svg', alt: 'Software Engineering, RB' },
       description: 'Management studio for the AI playbook: REF graph, gated edits, skill installs, MCP server',
       // Shared theme first, then this site's own overrides (kept minimal).
       customCss: [
         '@psa-department-of-engineering/starlight-theme/styles.css',
-        './src/styles/custom.css', './src/styles/vodafone.css'],
+        './src/styles/custom.css', './src/styles/rb.css'],
       lastUpdated: true,
       tableOfContents: {
         minHeadingLevel: 2,

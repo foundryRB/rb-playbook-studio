@@ -75,7 +75,7 @@ The studio pod runs two containers: the app and the oauth2-proxy sidecar. The si
 
 ## Delivery
 
-The app follows the standard Foundry app contract: a push to `main` triggers CI, semantic-release cuts the version, the two images and chart publish to GHCR, Argo CD Image Updater promotes each image tag through the app's `deploy-<install>` branch, and Argo CD syncs the cluster. The [Helm chart](https://github.com/VFPT-VODAFONE-FOUNDRY/adf-playbook-studio/tree/main/k8s) owns image bindings, Services, and deployment configuration.
+The app follows the standard Foundry app contract: a push to `main` triggers CI, semantic-release cuts the version, the two images and chart publish to GHCR, Argo CD Image Updater promotes each image tag through the app's `deploy-<install>` branch, and Argo CD syncs the cluster. The [Helm chart](https://github.com/foundryRB/rb-playbook-studio/tree/main/k8s) owns image bindings, Services, and deployment configuration.
 
 ## The local run
 

@@ -2,11 +2,11 @@
 # its docs site, each promoted by its own Image Updater alias writing images.<component>.tag.
 images:
   app:
-    repository: ghcr.io/vfpt-vodafone-foundry/playbook-studio-app
+    repository: ghcr.io/foundryrb/playbook-studio-app
     tag: latest
     pullPolicy: Always
   docs:
-    repository: ghcr.io/vfpt-vodafone-foundry/playbook-studio-docs
+    repository: ghcr.io/foundryrb/playbook-studio-docs
     tag: latest
     pullPolicy: Always
 
@@ -19,7 +19,7 @@ paused: false
 imagePullSecrets:
   - name: ghcr-pull
 
-host: playbook-studio.vodafone-foundry.com
+host: playbook-studio.rb-foundry.com
 
 # Per-team Gateway created by foundry-platform (platform/teams/playbook-studio.yaml).
 gateway:
@@ -56,7 +56,7 @@ auth:
   existingSecret: playbook-studio-auth
   oidc:
     enabled: true
-    issuer: https://keycloak.vodafone-foundry.com/realms/playbook-studio
+    issuer: https://keycloak.rb-foundry.com/realms/playbook-studio
     clientId: playbook-studio
     emailDomains: "*"
     # Client secret + cookie secret; minted in-cluster in this namespace by the
@@ -101,11 +101,11 @@ events:
 config:
   STUDIO_PLAYBOOK_ROOT: /data/playbook
   STUDIO_GIT_AUTHOR_NAME: playbook-studio
-  STUDIO_GIT_AUTHOR_EMAIL: playbook-studio@vodafone-foundry.com
+  STUDIO_GIT_AUTHOR_EMAIL: playbook-studio@rb-foundry.com
   STUDIO_CONTENT_POLL_SECONDS: "300"
   # The MCP transport's DNS-rebinding guard admits localhost only by default;
   # a deployment must allow the Host header of its public hostname.
-  STUDIO_MCP_ALLOWED_HOSTS: playbook-studio.vodafone-foundry.com
+  STUDIO_MCP_ALLOWED_HOSTS: playbook-studio.rb-foundry.com
 
 # Per-app docs site served behind the central portal at docs.<domain>/apps/<app>.
 # Built from docs/ by CI with the base baked in; this just runs the image.

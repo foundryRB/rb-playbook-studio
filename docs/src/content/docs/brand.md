@@ -4,10 +4,10 @@ id: DOC-REF-BRAND-001
 type: Reference
 status: Active
 updated: "2026-09-13"
-description: The Vodafone Portugal Digital identity and the application-owned styling sources.
+description: The RB Software Engineering identity and the application-owned styling sources.
 ---
 
-Playbook Studio wears the Vodafone Portugal Digital identity with a full-width workspace and 24px desktop gutters for its map, navigation and document readers: the lockup in the header, the brand's red as the primary and the ambient field's colour over neutral greys, the brand face for text and JetBrains Mono for the lockup's second line.
+Playbook Studio wears the RB Software Engineering identity with a full-width workspace and 24px desktop gutters for its map, navigation and document readers: the lockup in the header, the brand's green as the primary and the ambient field's colour over neutral greys, system fonts for text and JetBrains Mono for the lockup's second line.
 
 ## Application sources
 
