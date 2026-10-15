@@ -1,0 +1,9 @@
+apiVersion: v2
+name: playbook-studio
+description: prod environment pin for playbook-studio (ADR-025 deploy branch).
+type: application
+version: 1.0.0
+dependencies:
+  - name: playbook-studio
+    version: 1.0.0
+    repository: oci://ghcr.io/foundryrb/charts
