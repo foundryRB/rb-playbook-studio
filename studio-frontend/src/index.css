@@ -16,8 +16,8 @@
         --foreground: 210 8% 15.7%;
         --card: 0 0% 100%;
         --card-foreground: 210 8% 15.7%;
-        --primary: 0 100% 45.1%;
-        --primary-foreground: 0 0% 100%;
+        --primary: 158 100% 33%;
+        --primary-foreground: 0 0% 4%;
         --secondary: 0 0% 94.9%;
         --secondary-foreground: 210 8% 15.7%;
         --muted: 0 0% 94.9%;
@@ -37,7 +37,7 @@
         --graph-edge: #93a2bc;
         --graph-edge-hub: #b3bdd2;
         --graph-edge-skill: #8b7ce0;
-        --brand: 0 100% 45.1%;
+        --brand: 158 100% 33%;
         --brand-ink: 0 0% 100%;
     }
     .dark {
@@ -46,8 +46,8 @@
         --foreground: 220 30% 96.1%;
         --card: 222 23% 8.6%;
         --card-foreground: 220 30% 96.1%;
-        --primary: 0 100% 45.1%;
-        --primary-foreground: 0 0% 100%;
+        --primary: 158 100% 33%;
+        --primary-foreground: 0 0% 4%;
         --secondary: 223 24% 5.7%;
         --secondary-foreground: 220 30% 96.1%;
         --muted: 223 24% 5.7%;
@@ -66,7 +66,7 @@
         --graph-edge: #4c5a7a;
         --graph-edge-hub: #3b4a6b;
         --graph-edge-skill: #6d5fd0;
-        --brand: 0 100% 45.1%;
+        --brand: 158 100% 33%;
         --brand-ink: 0 0% 100%;
     }
     * {
