@@ -9,7 +9,7 @@ playbook-studio:
   images:
     app:
       repository: ghcr.io/foundryrb/playbook-studio-app
-      tag: 1.0.1
+      tag: 1.0.4
     docs:
       repository: ghcr.io/foundryrb/playbook-studio-docs
       tag: 1.0.1
