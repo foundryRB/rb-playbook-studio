@@ -1,7 +1,3 @@
-# Per-install values. Keys here are THIS install's own facts, pinned
-# explicitly: the app chart's defaults belong to whichever install it was
-# authored against, and an omitted key inherits them silently.
-# Sign-in goes through this install's playbook-studio realm (granted in teams/playbook-studio).
 playbook-studio:
   host: playbook-studio.rb-foundry.com
   auth:
@@ -13,7 +9,7 @@ playbook-studio:
   images:
     app:
       repository: ghcr.io/foundryrb/playbook-studio-app
-      tag: 1.0.0
+      tag: 1.0.1
     docs:
       repository: ghcr.io/foundryrb/playbook-studio-docs
       tag: 1.0.0
