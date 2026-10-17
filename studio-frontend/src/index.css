@@ -38,7 +38,7 @@
         --graph-edge-hub: #b3bdd2;
         --graph-edge-skill: #8b7ce0;
         --brand: 158 100% 33%;
-        g<1>0 0% 4%;
+        --brand-ink: 0 0% 4%;
     }
     .dark {
         color-scheme: dark;
@@ -67,7 +67,7 @@
         --graph-edge-hub: #3b4a6b;
         --graph-edge-skill: #6d5fd0;
         --brand: 158 100% 33%;
-        g<1>0 0% 4%;
+        --brand-ink: 0 0% 4%;
     }
     * {
         border-color: hsl(var(--border));
